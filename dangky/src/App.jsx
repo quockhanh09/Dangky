@@ -4,6 +4,9 @@ import './App.css'
 import logoAppa from './assets/Appa-cmc-nen-toi - Copy.png'
 import heroBg from './assets/Frame-1629.png'
 
+// Thay đường dẫn URL dưới đây bằng Web App URL thu được từ Google Apps Script
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzD7AVwQoWvYkUyzHGVM9XFqvwAm8cX5C_kkn_MExe7u_S0EE-H7xsYJvw6JLrBB5ks/exec'
+
 const MONTHS = [
   'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
   'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
@@ -78,15 +81,6 @@ function App() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = () => {
-    if (!validate()) return
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setShowModal(true)
-    }, 1200)
-  }
-
   const selectedDateStr = useMemo(() => {
     if (!selectedDate) return '--'
     const dayOfWeekNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
@@ -98,6 +92,38 @@ function App() {
   }, [selectedDate, currentMonth, currentYear])
 
   const activeSlotObj = TIME_SLOTS.find(s => s.id === selectedSlot)
+
+  // HÀM XỬ LÝ GỬI DỮ LIỆU SANG GOOGLE SHEETS
+  const handleSubmit = async () => {
+    if (!validate()) return
+    setLoading(true)
+
+    const payload = {
+      bookingDate: selectedDateStr,
+      timeSlot: activeSlotObj ? activeSlotObj.time : '',
+      artistName: artistName,
+      stageName: stageName,
+      phone: phone,
+      email: email
+    }
+
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify(payload)
+      })
+
+      setLoading(false)
+      setShowModal(true)
+    } catch (error) {
+      console.error('Lỗi khi gửi dữ liệu:', error)
+      setLoading(false)
+      alert('Đã xảy ra lỗi khi gửi đăng ký. Vui lòng thử lại!')
+    }
+  }
 
   return (
     <div className="page">
@@ -401,15 +427,14 @@ function App() {
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? 'ĐANG XỬ LÝ...' : 'ĐẮNG KÝ LỊCH HẸN'}
+            {loading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ LỊCH HẸN'}
           </button>
         </div>
       </main>
 
-      {/* ===== FOOTER (ĐÃ SỬA GIỐNG HỆT ĐÚNG 100% THEO MẪU ẢNH) ===== */}
+      {/* ===== FOOTER ===== */}
       <footer className="footer">
         <div className="footer-container">
-          {/* TOP SECTION: LOGO + TITLES + POLICY LINKS */}
           <div className="footer-top">
             <div className="footer-brand-center">
               <div className="footer-logo-title-row">
@@ -432,9 +457,7 @@ function App() {
             </div>
           </div>
 
-          {/* BOTTOM SECTION: SOCIALS + INFO + NAV COLUMNS */}
           <div className="footer-main-grid">
-            {/* CỘT TRÁI: MẠNG XÃ HỘI + ĐỊA CHỈ */}
             <div className="footer-col-info">
               <div className="footer-socials">
                 <a href="#" className="social-icon" aria-label="Facebook">
@@ -472,7 +495,6 @@ function App() {
               </div>
             </div>
 
-            {/* CỘT 2: HẠNG MỤC */}
             <div className="footer-col-nav">
               <h3 className="footer-col-title">Hạng mục</h3>
               <ul className="footer-menu">
@@ -484,7 +506,6 @@ function App() {
               </ul>
             </div>
 
-            {/* CỘT 3: TRUY CẬP NHANH */}
             <div className="footer-col-nav">
               <h3 className="footer-col-title">Truy cập nhanh</h3>
               <ul className="footer-menu">
@@ -496,7 +517,6 @@ function App() {
               </ul>
             </div>
 
-            {/* CỘT 4: HỖ TRỢ */}
             <div className="footer-col-nav">
               <h3 className="footer-col-title">Hỗ trợ</h3>
               <ul className="footer-menu">
