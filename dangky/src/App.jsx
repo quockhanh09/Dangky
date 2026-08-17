@@ -178,7 +178,7 @@ function App() {
         </div>
 
         <div className="header-action-wrapper">
-          <a href="#" className="header-back">VỀ TRANG CHỦ</a>
+          <a href="https://www.appa.org.vn/" className="header-back">VỀ TRANG CHỦ</a>
         </div>
       </header>
 
@@ -197,7 +197,7 @@ function App() {
         </div>
 
         <div className="hero-cta-wrapper">
-          <a href="#" className="hero-cta">
+          <a href="https://works.search.appa.org.vn/" className="hero-cta">
             TRA CỨU BÀI HÁT
           </a>
         </div>
