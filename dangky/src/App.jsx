@@ -1,30 +1,31 @@
 import { useState, useMemo } from 'react'
 import './App.css'
 
+import logoAppa from './assets/Appa-cmc-nen-toi - Copy.png'
+import heroBg from './assets/Frame-1629.png'
+
 const MONTHS = [
-  'Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6',
-  'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'
+  'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+  'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
 ]
 
-const WEEKDAYS = ['CN','T2','T3','T4','T5','T6','T7']
+const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 
 const TIME_SLOTS = [
-  { id: 1, time: '08:30 - 09:30', booked: false },
-  { id: 2, time: '09:30 - 10:30', booked: true },
-  { id: 3, time: '10:30 - 11:30', booked: false },
-  { id: 4, time: '11:30 - 12:30', booked: false },
-  { id: 5, time: '13:30 - 14:30', booked: true },
-  { id: 6, time: '14:30 - 15:30', booked: false },
-  { id: 7, time: '15:30 - 16:30', booked: false },
-  { id: 8, time: '16:30 - 17:30', booked: false },
+  { id: 1, time: '08:30 - 09:30', status: 'available' },
+  { id: 2, time: '09:30 - 10:30', status: 'booked' },
+  { id: 3, time: '10:30 - 11:30', status: 'available' },
+  { id: 4, time: '13:30 - 14:30', status: 'available' },
+  { id: 5, time: '14:30 - 15:30', status: 'available' },
+  { id: 6, time: '15:30 - 16:30', status: 'available' },
 ]
 
 function App() {
-  const today = new Date()
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth())
-  const [currentYear, setCurrentYear] = useState(today.getFullYear())
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [selectedSlot, setSelectedSlot] = useState(null)
+  const [currentMonth, setCurrentMonth] = useState(7)
+  const [currentYear, setCurrentYear] = useState(2026)
+  const [selectedDate, setSelectedDate] = useState(13)
+  const [selectedSlot, setSelectedSlot] = useState(3)
+
   const [artistName, setArtistName] = useState('')
   const [stageName, setStageName] = useState('')
   const [phone, setPhone] = useState('')
@@ -33,51 +34,28 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
 
-  const yearRange = useMemo(() => {
-    const years = []
-    for (let y = currentYear - 5; y <= currentYear + 5; y++) years.push(y)
-    return years
-  }, [currentYear])
-
   const calendarDays = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1).getDay()
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
     const days = []
-    for (let i = 0; i < firstDay; i++) days.push({ empty: true })
-    for (let d = 1; d <= daysInMonth; d++) days.push({ day: d, empty: false })
+    
+    const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate()
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push({ day: prevMonthDays - i, isCurrentMonth: false })
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push({ day: d, isCurrentMonth: true })
+    }
+    const remaining = 35 - days.length
+    for (let d = 1; d <= (remaining > 0 ? remaining : remaining + 7); d++) {
+      days.push({ day: d, isCurrentMonth: false })
+    }
     return days
   }, [currentMonth, currentYear])
 
-  const isDateDisabled = (day) => {
-    const date = new Date(currentYear, currentMonth, day)
-    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    return date < start
-  }
-
-  const isToday = (day) => {
-    return (
-      day === today.getDate() &&
-      currentMonth === today.getMonth() &&
-      currentYear === today.getFullYear()
-    )
-  }
-
-  const prevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11)
-      setCurrentYear(currentYear - 1)
-    } else {
-      setCurrentMonth(currentMonth - 1)
-    }
-  }
-
-  const nextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0)
-      setCurrentYear(currentYear + 1)
-    } else {
-      setCurrentMonth(currentMonth + 1)
-    }
+  const handleSlotClick = (slot) => {
+    if (slot.status === 'booked') return
+    setSelectedSlot(slot.id)
   }
 
   const validate = () => {
@@ -106,326 +84,438 @@ function App() {
     setTimeout(() => {
       setLoading(false)
       setShowModal(true)
-    }, 1500)
+    }, 1200)
   }
 
-  const selectedDateStr = selectedDate
-    ? `Thứ ${['CN','T2','T3','T4','T5','T6','T7'][new Date(currentYear, currentMonth, selectedDate).getDay()]}, ${String(selectedDate).padStart(2,'0')}/${String(currentMonth+1).padStart(2,'0')}/${currentYear}`
-    : '--'
+  const selectedDateStr = useMemo(() => {
+    if (!selectedDate) return '--'
+    const dayOfWeekNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
+    const dateObj = new Date(currentYear, currentMonth, selectedDate)
+    const dayName = dayOfWeekNames[dateObj.getDay()]
+    const dayFormatted = String(selectedDate).padStart(2, '0')
+    const monthFormatted = String(currentMonth + 1).padStart(2, '0')
+    return `${dayName}, ${dayFormatted}/${monthFormatted}/${currentYear}`
+  }, [selectedDate, currentMonth, currentYear])
 
-  const allStepsValid = selectedDate && selectedSlot && artistName.trim() && stageName.trim() && phone.trim() && email.trim()
+  const activeSlotObj = TIME_SLOTS.find(s => s.id === selectedSlot)
 
   return (
     <div className="page">
       {/* ===== HEADER ===== */}
       <header className="header">
         <div className="header-brand">
-          <div className="header-logo">APPA</div>
-          <span>APPA - CMC</span>
+          <img src={logoAppa} alt="APPA CMC Logo" className="header-logo-img" />
+          <div className="header-text-block">
+            <span className="header-title-vn">
+              TRUNG TÂM KHAI THÁC QUYỀN BIỂU DIỄN ÂM NHẠC VIỆT NAM (APPA - CMC)
+            </span>
+            <span className="header-title-en">
+              Vietnam association for rights performance of music performing artists - Collective management center
+            </span>
+          </div>
         </div>
-        <a href="#" className="header-back">VỀ TRANG CHỦ</a>
+
+        <div className="header-action-wrapper">
+          <a href="#" className="header-back">VỀ TRANG CHỦ</a>
+        </div>
       </header>
 
-      {/* ===== HERO ===== */}
-      <section className="hero">
-        <h1>ĐẶNG KÝ LỊCH LÀM VIỆC</h1>
-        <p className="hero-desc">
-          Nghệ sĩ đăng ký lịch hẹn hoặc tra cứu bài hát. Vui lòng điền đầy đủ thông tin bên dưới để đăng ký.
-        </p>
-        <a href="#" className="hero-cta">
-          <span>TRA CỨU BÀI HÁT</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
+      {/* ===== HERO BANNER ===== */}
+      <section 
+        className="hero" 
+        style={{ backgroundImage: `url(${heroBg})` }}
+      >
+        <div className="hero-content">
+          <h1>ĐĂNG KÝ LỊCH LÀM VIỆC</h1>
+          <p className="hero-desc">
+            Chủ động đặt lịch để được hỗ trợ nhanh chóng khi đến làm việc.
+            <br />
+            Nghệ sĩ có thể tra cứu trước dữ liệu các ca khúc của mình trên hệ thống của trung tâm.
+          </p>
+        </div>
+
+        <div className="hero-cta-wrapper">
+          <a href="#" className="hero-cta">
+            TRA CỨU BÀI HÁT
+          </a>
+        </div>
       </section>
 
-      {/* ===== MAIN LAYOUT ===== */}
-      <div className="main-layout">
+      {/* ===== MAIN BODY LAYOUT ===== */}
+      <main className="main-layout">
         <div className="left-column">
-          {/* STEPS BAR */}
-          <div className="steps-bar">
-            <div className={`step ${selectedDate || selectedSlot ? 'active' : ''}`}>
-              <span className="step-num">1</span>
-              <span>Chọn lịch hẹn</span>
+          
+          {/* SECTION 1: CHỌN LỊCH HẸN */}
+          <div className="booking-card">
+            <div className="card-section-title">
+              <span className="icon-calendar-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f52ba" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </span>
+              <h2>1. Chọn lịch hẹn</h2>
             </div>
-            <div className="step-sep" />
-            <div className={`step ${artistName || stageName ? 'active' : ''}`}>
-              <span className="step-num">2</span>
-              <span>Thông tin nghệ sĩ</span>
-            </div>
-            <div className="step-sep" />
-            <div className={`step ${phone || email ? 'active' : ''}`}>
-              <span className="step-num">3</span>
-              <span>Thông tin liên hệ</span>
+
+            <div className="booking-picker-grid">
+              <div className="calendar-box">
+                <div className="cal-sub-label">Ngày đến làm việc</div>
+                
+                <div className="mini-calendar">
+                  <div className="mini-cal-header">
+                    <div className="select-group">
+                      <select 
+                        value={currentMonth} 
+                        onChange={(e) => setCurrentMonth(Number(e.target.value))}
+                      >
+                        {MONTHS.map((m, idx) => (
+                          <option key={idx} value={idx}>{m}</option>
+                        ))}
+                      </select>
+                      <select 
+                        value={currentYear} 
+                        onChange={(e) => setCurrentYear(Number(e.target.value))}
+                      >
+                        <option value={2025}>2025</option>
+                        <option value={2026}>2026</option>
+                        <option value={2027}>2027</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mini-cal-weekdays">
+                    {WEEKDAYS.map((wd) => (
+                      <div key={wd} className="weekday-cell">{wd}</div>
+                    ))}
+                  </div>
+
+                  <div className="mini-cal-days">
+                    {calendarDays.map((item, index) => {
+                      const isSelected = item.isCurrentMonth && item.day === selectedDate
+                      return (
+                        <button
+                          key={index}
+                          className={`day-cell ${!item.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''}`}
+                          onClick={() => item.isCurrentMonth && setSelectedDate(item.day)}
+                        >
+                          {item.day}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="slots-box">
+                <div className="cal-sub-label">Khung giờ làm việc</div>
+                
+                <div className="slots-grid-2col">
+                  {TIME_SLOTS.map((slot) => {
+                    const isSelected = selectedSlot === slot.id
+                    const isBooked = slot.status === 'booked'
+
+                    let slotClass = 'slot-item'
+                    if (isBooked) slotClass += ' is-booked'
+                    else if (isSelected) slotClass += ' is-selected'
+
+                    return (
+                      <button
+                        key={slot.id}
+                        className={slotClass}
+                        onClick={() => handleSlotClick(slot)}
+                      >
+                        {slot.time}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="slots-legend">
+                  <div className="legend-item">
+                    <span className="legend-box available"></span>
+                    <span>Còn trống</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-box selected"></span>
+                    <span>Đã chọn</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-box booked"></span>
+                    <span>Đã kín</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* STEP 1: CALENDAR */}
-          <div className="card">
-            <div className="card-title">1. Chọn lịch hẹn</div>
-            <div className="card-subtitle">Chọn ngày và khung giờ phù hợp</div>
-
-            <div className="cal-header">
-              <div className="cal-title">
-                {MONTHS[currentMonth]} / {currentYear}
-              </div>
-              <div className="cal-nav">
-                <select
-                  className="cal-select"
-                  value={currentMonth}
-                  onChange={(e) => setCurrentMonth(Number(e.target.value))}
-                >
-                  {MONTHS.map((m, i) => (
-                    <option key={i} value={i}>{m}</option>
-                  ))}
-                </select>
-                <select
-                  className="cal-select"
-                  value={currentYear}
-                  onChange={(e) => setCurrentYear(Number(e.target.value))}
-                >
-                  {yearRange.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-                <button className="cal-nav-btn" onClick={prevMonth}>&lt;</button>
-                <button className="cal-nav-btn" onClick={nextMonth}>&gt;</button>
-              </div>
+          {/* SECTION 2: THÔNG TIN NGHỆ SĨ */}
+          <div className="booking-card">
+            <div className="card-section-title">
+              <span className="icon-user-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f52ba" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </span>
+              <h2>2. Anh/chị tới đăng ký cho nghệ sĩ nào?</h2>
             </div>
 
-            <div className="cal-weekdays">
-              {WEEKDAYS.map((d) => (
-                <div key={d} className="cal-weekday">{d}</div>
-              ))}
-            </div>
-
-            <div className="cal-grid">
-              {calendarDays.map((d, i) => {
-                if (d.empty) return <div key={`e${i}`} className="cal-day empty" />
-                const disabled = isDateDisabled(d.day)
-                const selected = selectedDate === d.day && currentMonth === today.getMonth() && currentYear === today.getFullYear()
-                const todayFlag = isToday(d.day)
-                return (
-                  <button
-                    key={i}
-                    className={`cal-day ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${todayFlag ? 'today' : ''}`}
-                    onClick={() => !disabled && setSelectedDate(d.day)}
-                    disabled={disabled}
-                  >
-                    {d.day}
-                  </button>
-                )
-              })}
-            </div>
-
-            {errors.date && <div className="form-error" style={{marginTop: 8}}>{errors.date}</div>}
-
-            <div style={{marginTop: 24}}>
-              <div style={{fontWeight: 600, fontSize: 14, marginBottom: 12, color: '#334155'}}>Khung giờ làm việc</div>
-              <div className="slots-grid">
-                {TIME_SLOTS.map((slot) => (
-                  <button
-                    key={slot.id}
-                    className={`slot-btn ${selectedSlot === slot.id ? 'selected' : ''} ${slot.booked ? 'booked' : ''}`}
-                    onClick={() => !slot.booked && setSelectedSlot(slot.id)}
-                    disabled={slot.booked}
-                  >
-                    {slot.time}
-                  </button>
-                ))}
-              </div>
-              {errors.slot && <div className="form-error" style={{marginTop: 8}}>{errors.slot}</div>}
-            </div>
-          </div>
-
-          {/* STEP 2: ARTIST INFO */}
-          <div className="card">
-            <div className="card-title">2. Anh/chị tới đăng ký cho nghệ sĩ nào?</div>
-            <div className="card-subtitle">Vui lòng điền thông tin nghệ sĩ</div>
-
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Họ và tên nghệ sĩ <span className="required">*</span></label>
+            <div className="form-grid-2col">
+              <div className="form-field">
+                <label><span className="star">*</span> Họ và tên nghệ sĩ</label>
                 <input
                   type="text"
-                  className={`form-input ${errors.artistName ? 'error' : ''}`}
                   placeholder="Nhập họ và tên nghệ sĩ"
                   value={artistName}
-                  onChange={(e) => { setArtistName(e.target.value); if (errors.artistName) setErrors({...errors, artistName: ''}) }}
+                  onChange={(e) => setArtistName(e.target.value)}
+                  className={errors.artistName ? 'input-error' : ''}
                 />
-                <div className="form-error">{errors.artistName}</div>
+                {errors.artistName && <span className="error-text">{errors.artistName}</span>}
               </div>
-              <div className="form-group">
-                <label className="form-label">Nghệ danh <span className="required">*</span></label>
+
+              <div className="form-field">
+                <label><span className="star">*</span> Nghệ danh</label>
                 <input
                   type="text"
-                  className={`form-input ${errors.stageName ? 'error' : ''}`}
                   placeholder="Nhập nghệ danh nghệ sĩ"
                   value={stageName}
-                  onChange={(e) => { setStageName(e.target.value); if (errors.stageName) setErrors({...errors, stageName: ''}) }}
+                  onChange={(e) => setStageName(e.target.value)}
+                  className={errors.stageName ? 'input-error' : ''}
                 />
-                <div className="form-error">{errors.stageName}</div>
+                {errors.stageName && <span className="error-text">{errors.stageName}</span>}
               </div>
             </div>
           </div>
 
-          {/* STEP 3: CONTACT INFO */}
-          <div className="card">
-            <div className="card-title">3. Thông tin người tới làm việc</div>
-            <div className="card-subtitle">Thông tin liên hệ để xác nhận lịch hẹn</div>
+          {/* SECTION 3: THÔNG TIN NGƯỜI TỚI LÀM VIỆC */}
+          <div className="booking-card">
+            <div className="card-section-title">
+              <span className="icon-user-title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f52ba" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </span>
+              <h2>3. Thông tin người tới làm việc</h2>
+            </div>
 
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Số điện thoại <span className="required">*</span></label>
+            <div className="form-grid-2col">
+              <div className="form-field">
+                <label><span className="star">*</span> Số điện thoại</label>
                 <input
-                  type="tel"
-                  className={`form-input ${errors.phone ? 'error' : ''}`}
+                  type="text"
                   placeholder="Nhập số điện thoại"
                   value={phone}
-                  onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '').slice(0,10)); if (errors.phone) setErrors({...errors, phone: ''}) }}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className={errors.phone ? 'input-error' : ''}
                 />
-                <div className="form-error">{errors.phone}</div>
+                {errors.phone && <span className="error-text">{errors.phone}</span>}
               </div>
-              <div className="form-group">
-                <label className="form-label">Email <span className="required">*</span></label>
+
+              <div className="form-field">
+                <label><span className="star">*</span> Email</label>
                 <input
                   type="email"
-                  className={`form-input ${errors.email ? 'error' : ''}`}
                   placeholder="Nhập email"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({...errors, email: ''}) }}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={errors.email ? 'input-error' : ''}
                 />
-                <div className="form-error">{errors.email}</div>
+                {errors.email && <span className="error-text">{errors.email}</span>}
               </div>
             </div>
           </div>
+
         </div>
 
         {/* ===== RIGHT SIDEBAR ===== */}
         <div className="right-column">
           <div className="sidebar-card">
-            <div className="sidebar-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Thông tin lịch hẹn
+            <div className="sidebar-card-title">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f52ba" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>Thông tin lịch hẹn</span>
             </div>
 
-            <div className="summary-row">
-              <span className="summary-label">Ngày hẹn</span>
-              <span className="summary-value">{selectedDateStr}</span>
-            </div>
-            <div className="summary-row">
-              <span className="summary-label">Khung giờ</span>
-              <span className="summary-value">
-                {selectedSlot ? TIME_SLOTS.find(s => s.id === selectedSlot)?.time : '--'}
-              </span>
-            </div>
+            <div className="summary-section">
+              <div className="summary-label">Ngày đến làm việc</div>
+              <div className="summary-value-highlight">{selectedDateStr}</div>
 
-            <div className="summary-note">
-              <strong>Lưu ý:</strong>
-              <ul>
-                <li>Vui lòng đến đúng giờ hẹn</li>
-                <li>Xác nhận lịch hẹn qua SĐT/Email</li>
-                <li>Mang theo giấy tờ tùy thân</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="sidebar-card">
-            <div className="sidebar-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              Liên hệ
-            </div>
-
-            <div className="contact-info">
-              <div className="contact-item">
-                <div className="contact-icon">H</div>
-                <span>0989 115 323</span>
+              <div className="summary-label" style={{ marginTop: 16 }}>Khung giờ</div>
+              <div className="summary-value-highlight">
+                {activeSlotObj ? activeSlotObj.time : '--:--'}
               </div>
-              <div className="contact-item">
-                <div className="contact-icon">@</div>
-                <span>info@appa.org.vn</span>
+            </div>
+
+            <div className="summary-divider" />
+
+            <div className="summary-notes">
+              <div className="notes-title">Lưu ý</div>
+              <div className="note-item">
+                <span className="check-icon">✓</span>
+                <span>Vui lòng đến đúng giờ đã đăng ký</span>
               </div>
-              <div className="contact-item">
-                <div className="contact-icon">G</div>
-                <span>8:00 - 17:00, T2 - T6</span>
+              <div className="note-item">
+                <span className="check-icon">✓</span>
+                <span>Trung tâm sẽ liên hệ xác nhận qua điện thoại hoặc email</span>
               </div>
             </div>
           </div>
 
-          <button
-            className={`submit-btn ${loading ? 'loading' : ''}`}
+          <div className="contact-card">
+            <div className="contact-title">Liên hệ</div>
+            <div className="contact-list">
+              <div className="contact-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f52ba" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                <span className="contact-text font-bold">0989 115 323</span>
+              </div>
+
+              <div className="contact-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f52ba" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <span className="contact-text font-bold">info@appa.org.vn</span>
+              </div>
+
+              <div className="contact-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f52ba" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span className="contact-text font-bold">8:00 - 17:00 (T2 - T6)</span>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            className="btn-submit-booking"
             onClick={handleSubmit}
-            disabled={!allStepsValid || loading}
+            disabled={loading}
           >
-            {loading ? (
-              <>
-                <span className="spinner" style={{width: 18, height: 18, border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.6s linear infinite'}} />
-                Đang xử lý...
-              </>
-            ) : (
-              'ĐĂNG KÝ LỊCH HẸN'
-            )}
+            {loading ? 'ĐANG XỬ LÝ...' : 'ĐẮNG KÝ LỊCH HẸN'}
           </button>
         </div>
-      </div>
+      </main>
 
-      {/* ===== FOOTER ===== */}
+      {/* ===== FOOTER (ĐÃ SỬA GIỐNG HỆT ĐÚNG 100% THEO MẪU ẢNH) ===== */}
       <footer className="footer">
-        <div className="footer-inner">
-          <div className="footer-grid">
-            <div>
-              <div className="footer-brand">APPA - CMC</div>
-              <p className="footer-desc">
-                Hà Nội: Tầng 5, Tòa nhà CMC, 11 Duy Tân, Cầu Giấy<br />
-                TP.HCM: Tầng 3, Tòa nhà CMC, 180 Điện Biên Phủ, Q. Bình Thạnh<br />
-                Tel: (024) 7300 1866 &nbsp;|&nbsp; Email: info@appa.org.vn
-              </p>
-            </div>
-            <div>
-              <div className="footer-heading">Hạng mục</div>
-              <ul className="footer-links">
-                <li><a href="#">Đăng ký lịch làm việc</a></li>
-                <li><a href="#">Tra cứu bài hát</a></li>
-                <li><a href="#">Quy định & Điều khoản</a></li>
-              </ul>
-            </div>
-            <div>
-              <div className="footer-heading">Truy cập nhanh</div>
-              <ul className="footer-links">
-                <li><a href="#">Về chúng tôi</a></li>
-                <li><a href="#">Dịch vụ</a></li>
-                <li><a href="#">Tin tức</a></li>
-              </ul>
-            </div>
-            <div>
-              <div className="footer-heading">Hỗ trợ</div>
-              <ul className="footer-links">
-                <li><a href="#">FAQ</a></li>
-                <li><a href="#">Hướng dẫn sử dụng</a></li>
-                <li><a href="#">Liên hệ hỗ trợ</a></li>
-              </ul>
+        <div className="footer-container">
+          {/* TOP SECTION: LOGO + TITLES + POLICY LINKS */}
+          <div className="footer-top">
+            <div className="footer-brand-center">
+              <div className="footer-logo-title-row">
+                <img src={logoAppa} alt="APPA CMC Logo" className="footer-logo" />
+                <div className="footer-titles">
+                  <h2 className="footer-title-main">
+                    TRUNG TÂM KHAI THÁC QUYỀN BIỂU DIỄN ÂM NHẠC VIỆT NAM (APPA - CMC)
+                  </h2>
+                  <p className="footer-title-sub">
+                    Vietnam association for rights performance of music performing artists - Collective management center
+                  </p>
+                </div>
+              </div>
+
+              <div className="footer-policy-links">
+                <a href="#">Điều khoản sử dụng</a>
+                <span className="footer-policy-divider">|</span>
+                <a href="#">Chính sách bảo mật dữ liệu cá nhân</a>
+              </div>
             </div>
           </div>
-          <div className="footer-bottom">
-            <div className="footer-copy">&copy; 2026 APPA - CMC. All rights reserved.</div>
-            <div className="footer-social">
-              <a href="#" aria-label="Facebook">F</a>
-              <a href="#" aria-label="Instagram">I</a>
-              <a href="#" aria-label="YouTube">Y</a>
-              <a href="#" aria-label="LinkedIn">L</a>
+
+          {/* BOTTOM SECTION: SOCIALS + INFO + NAV COLUMNS */}
+          <div className="footer-main-grid">
+            {/* CỘT TRÁI: MẠNG XÃ HỘI + ĐỊA CHỈ */}
+            <div className="footer-col-info">
+              <div className="footer-socials">
+                <a href="#" className="social-icon" aria-label="Facebook">
+                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.891h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
+                  </svg>
+                </a>
+                <a href="#" className="social-icon" aria-label="Instagram">
+                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                  </svg>
+                </a>
+                <a href="#" className="social-icon" aria-label="YouTube">
+                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                  </svg>
+                </a>
+                <a href="#" className="social-icon" aria-label="LinkedIn">
+                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                  </svg>
+                </a>
+              </div>
+
+              <div className="footer-address-block">
+                <p className="address-label">Địa chỉ:</p>
+                <p className="address-line">Hà Nội: Tòa W1, Vinhomes Westpoint, Đỗ Đức Dục, Phường Từ Liêm, Hà Nội</p>
+                <p className="address-line">TP. HCM: 22A Cộng Hoà, Phường Tân Sơn Nhất, Tp. Hồ Chí Minh</p>
+                <p className="address-line"><span className="address-bold">TEL:</span> (+84) 989 115 323</p>
+                <p className="address-line"><span className="address-bold">E-MAIL:</span> info@appa.org.vn</p>
+              </div>
+
+              <div className="footer-copyright">
+                Bản quyền thuộc về © 2026 APPA - CMC.
+              </div>
+            </div>
+
+            {/* CỘT 2: HẠNG MỤC */}
+            <div className="footer-col-nav">
+              <h3 className="footer-col-title">Hạng mục</h3>
+              <ul className="footer-menu">
+                <li><a href="#">Về Trung tâm</a></li>
+                <li><a href="#">Tin tức & Sự kiện</a></li>
+                <li><a href="#">Hướng dẫn gia nhập</a></li>
+                <li><a href="#">Dành cho hội viên</a></li>
+                <li><a href="#">Thư viện</a></li>
+              </ul>
+            </div>
+
+            {/* CỘT 3: TRUY CẬP NHANH */}
+            <div className="footer-col-nav">
+              <h3 className="footer-col-title">Truy cập nhanh</h3>
+              <ul className="footer-menu">
+                <li><a href="#">Hướng dẫn gia nhập</a></li>
+                <li><a href="#">Đăng ký hội viên</a></li>
+                <li><a href="#">Đăng ký thông tin biểu diễn</a></li>
+                <li><a href="#">Pháp luật Việt Nam</a></li>
+                <li><a href="#">Các loại biểu mẫu</a></li>
+              </ul>
+            </div>
+
+            {/* CỘT 4: HỖ TRỢ */}
+            <div className="footer-col-nav">
+              <h3 className="footer-col-title">Hỗ trợ</h3>
+              <ul className="footer-menu">
+                <li><a href="#">Câu hỏi thường gặp</a></li>
+                <li><a href="#">Đăng câu hỏi</a></li>
+                <li><a href="#">Liên hệ</a></li>
+              </ul>
             </div>
           </div>
         </div>
       </footer>
 
-      {/* ===== MODAL ===== */}
+      {/* MODAL KHI THÀNH CÔNG */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">&#10003;</div>
             <h3>Đăng ký thành công!</h3>
-            <p>
-              Lịch hẹn của bạn đã được ghi nhận. Chúng tôi sẽ gửi xác nhận qua SĐT/Email của bạn.
-            </p>
+            <p>Lịch hẹn của bạn đã được ghi nhận thành công.</p>
             <button className="modal-close" onClick={() => setShowModal(false)}>Đóng</button>
           </div>
         </div>
