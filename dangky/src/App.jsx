@@ -7,6 +7,8 @@ import heroBg from './assets/Frame-1629.png'
 // Thay đường dẫn URL dưới đây bằng Web App URL thu được từ Google Apps Script
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzD7AVwQoWvYkUyzHGVM9XFqvwAm8cX5C_kkn_MExe7u_S0EE-H7xsYJvw6JLrBB5ks/exec'
 
+const MAX_SLOTS_PER_TIME = 3 // Giới hạn tối đa 3 lượt đăng ký cho 1 khung giờ
+
 const MONTHS = [
   'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
   'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
@@ -14,20 +16,20 @@ const MONTHS = [
 
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 
-const TIME_SLOTS = [
-  { id: 1, time: '08:30 - 09:30', status: 'available' },
-  { id: 2, time: '09:30 - 10:30', status: 'booked' },
-  { id: 3, time: '10:30 - 11:30', status: 'available' },
-  { id: 4, time: '13:30 - 14:30', status: 'available' },
-  { id: 5, time: '14:30 - 15:30', status: 'available' },
-  { id: 6, time: '15:30 - 16:30', status: 'available' },
+const INITIAL_TIME_SLOTS = [
+  { id: 1, time: '08:30 - 09:30' },
+  { id: 2, time: '09:30 - 10:30' },
+  { id: 3, time: '10:30 - 11:30' },
+  { id: 4, time: '13:30 - 14:30' },
+  { id: 5, time: '14:30 - 15:30' },
+  { id: 6, time: '15:30 - 16:30' },
 ]
 
 function App() {
-  const [currentMonth, setCurrentMonth] = useState(7)
+  const [currentMonth, setCurrentMonth] = useState(7) // Tháng 8 (index 7)
   const [currentYear, setCurrentYear] = useState(2026)
-  const [selectedDate, setSelectedDate] = useState(13)
-  const [selectedSlot, setSelectedSlot] = useState(3)
+  const [selectedDate, setSelectedDate] = useState(14)
+  const [selectedSlot, setSelectedSlot] = useState(1)
 
   const [artistName, setArtistName] = useState('')
   const [stageName, setStageName] = useState('')
@@ -36,6 +38,12 @@ function App() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
+
+  // Lưu trữ số lượt đăng ký theo ngày & slotId: { "14/08/2026": { 2: 3, 1: 1 } }
+  // Mặc định giả lập khung giờ 2 (09:30 - 10:30) của ngày 14 đã full 3 slot để hiển thị màu xám
+  const [bookings, setBookings] = useState({
+    'Thứ sáu, 14/08/2026': { 2: 3 } 
+  })
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1).getDay()
@@ -56,8 +64,25 @@ function App() {
     return days
   }, [currentMonth, currentYear])
 
+  const selectedDateStr = useMemo(() => {
+    if (!selectedDate) return '--'
+    const dayOfWeekNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
+    const dateObj = new Date(currentYear, currentMonth, selectedDate)
+    const dayName = dayOfWeekNames[dateObj.getDay()]
+    const dayFormatted = String(selectedDate).padStart(2, '0')
+    const monthFormatted = String(currentMonth + 1).padStart(2, '0')
+    return `${dayName}, ${dayFormatted}/${monthFormatted}/${currentYear}`
+  }, [selectedDate, currentMonth, currentYear])
+
+  // Lấy số lượt đã đăng ký của 1 slot cụ thể trong ngày đang chọn
+  const getSlotBookedCount = (slotId) => {
+    if (!selectedDateStr || !bookings[selectedDateStr]) return 0
+    return bookings[selectedDateStr][slotId] || 0
+  }
+
   const handleSlotClick = (slot) => {
-    if (slot.status === 'booked') return
+    const bookedCount = getSlotBookedCount(slot.id)
+    if (bookedCount >= MAX_SLOTS_PER_TIME) return // Đã đủ 3 slot thì không thể chọn
     setSelectedSlot(slot.id)
   }
 
@@ -81,21 +106,19 @@ function App() {
     return Object.keys(newErrors).length === 0
   }
 
-  const selectedDateStr = useMemo(() => {
-    if (!selectedDate) return '--'
-    const dayOfWeekNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
-    const dateObj = new Date(currentYear, currentMonth, selectedDate)
-    const dayName = dayOfWeekNames[dateObj.getDay()]
-    const dayFormatted = String(selectedDate).padStart(2, '0')
-    const monthFormatted = String(currentMonth + 1).padStart(2, '0')
-    return `${dayName}, ${dayFormatted}/${monthFormatted}/${currentYear}`
-  }, [selectedDate, currentMonth, currentYear])
-
-  const activeSlotObj = TIME_SLOTS.find(s => s.id === selectedSlot)
+  const activeSlotObj = INITIAL_TIME_SLOTS.find(s => s.id === selectedSlot)
 
   // HÀM XỬ LÝ GỬI DỮ LIỆU SANG GOOGLE SHEETS
   const handleSubmit = async () => {
     if (!validate()) return
+
+    // Kiểm tra lại lần cuối trước khi bấm gửi
+    const currentBooked = getSlotBookedCount(selectedSlot)
+    if (currentBooked >= MAX_SLOTS_PER_TIME) {
+      alert('Khung giờ này vừa mới hết chỗ, vui lòng chọn khung giờ khác!')
+      return
+    }
+
     setLoading(true)
 
     const payload = {
@@ -114,6 +137,19 @@ function App() {
           'Content-Type': 'text/plain;charset=utf-8',
         },
         body: JSON.stringify(payload)
+      })
+
+      // Tăng số lượt đăng ký của khung giờ này lên 1
+      setBookings(prev => {
+        const dateBookings = prev[selectedDateStr] || {}
+        const currentSlotCount = dateBookings[selectedSlot] || 0
+        return {
+          ...prev,
+          [selectedDateStr]: {
+            ...dateBookings,
+            [selectedSlot]: currentSlotCount + 1
+          }
+        }
       })
 
       setLoading(false)
@@ -235,24 +271,29 @@ function App() {
               </div>
 
               <div className="slots-box">
-                <div className="cal-sub-label">Khung giờ làm việc</div>
+                <div className="cal-sub-label">Khung giờ làm việc (Tối đa 3 slot/khung giờ)</div>
                 
                 <div className="slots-grid-2col">
-                  {TIME_SLOTS.map((slot) => {
-                    const isSelected = selectedSlot === slot.id
-                    const isBooked = slot.status === 'booked'
+                  {INITIAL_TIME_SLOTS.map((slot) => {
+                    const bookedCount = getSlotBookedCount(slot.id)
+                    const isFull = bookedCount >= MAX_SLOTS_PER_TIME
+                    const isSelected = selectedSlot === slot.id && !isFull
 
                     let slotClass = 'slot-item'
-                    if (isBooked) slotClass += ' is-booked'
+                    if (isFull) slotClass += ' is-booked'
                     else if (isSelected) slotClass += ' is-selected'
 
                     return (
                       <button
                         key={slot.id}
                         className={slotClass}
+                        disabled={isFull}
                         onClick={() => handleSlotClick(slot)}
                       >
-                        {slot.time}
+                        <div>{slot.time}</div>
+                        <span style={{ fontSize: '11px', opacity: 0.85, fontWeight: 'normal' }}>
+                          {isFull ? '(Đã kín)' : `(Còn ${MAX_SLOTS_PER_TIME - bookedCount}/${MAX_SLOTS_PER_TIME} slot)`}
+                        </span>
                       </button>
                     )
                   })}
@@ -269,7 +310,7 @@ function App() {
                   </div>
                   <div className="legend-item">
                     <span className="legend-box booked"></span>
-                    <span>Đã kín</span>
+                    <span>Đã kín (Đủ 3 slot)</span>
                   </div>
                 </div>
               </div>
@@ -375,7 +416,9 @@ function App() {
 
               <div className="summary-label" style={{ marginTop: 16 }}>Khung giờ</div>
               <div className="summary-value-highlight">
-                {activeSlotObj ? activeSlotObj.time : '--:--'}
+                {activeSlotObj && getSlotBookedCount(activeSlotObj.id) < MAX_SLOTS_PER_TIME 
+                  ? activeSlotObj.time 
+                  : 'Chưa chọn'}
               </div>
             </div>
 
@@ -386,6 +429,10 @@ function App() {
               <div className="note-item">
                 <span className="check-icon">✓</span>
                 <span>Vui lòng đến đúng giờ đã đăng ký</span>
+              </div>
+              <div className="note-item">
+                <span className="check-icon">✓</span>
+                <span>Mỗi khung giờ chỉ nhận tối đa 3 lượt đăng ký</span>
               </div>
               <div className="note-item">
                 <span className="check-icon">✓</span>
