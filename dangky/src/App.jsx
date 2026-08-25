@@ -2,12 +2,20 @@ import { useState, useMemo } from 'react'
 import './App.css'
 
 import logoAppa from './assets/Appa-cmc-nen-toi - Copy.png'
+import logoAppaF from './assets/Appa-cmc-chu-trang-(trong-suot).png'
 import heroBg from './assets/Frame-1629.png'
+import ptBg from './assets/PT.png'
 
-// Thay đường dẫn URL dưới đây bằng Web App URL thu được từ Google Apps Script
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzD7AVwQoWvYkUyzHGVM9XFqvwAm8cX5C_kkn_MExe7u_S0EE-H7xsYJvw6JLrBB5ks/exec'
 
-const MAX_SLOTS_PER_TIME = 3 // Giới hạn tối đa 3 lượt đăng ký cho 1 khung giờ
+const MAX_SLOTS_PER_TIME = 3 
+const HOLIDAYS = [
+  '01/01', 
+  '30/04',  
+  '01/05',
+  '02/09', 
+  '03/09', 
+]
 
 const MONTHS = [
   'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
@@ -28,7 +36,7 @@ const INITIAL_TIME_SLOTS = [
 function App() {
   const [currentMonth, setCurrentMonth] = useState(7) // Tháng 8 (index 7)
   const [currentYear, setCurrentYear] = useState(2026)
-  const [selectedDate, setSelectedDate] = useState(14)
+  const [selectedDate, setSelectedDate] = useState({ year: 2026, month: 7, day: 28 })
   const [selectedSlot, setSelectedSlot] = useState(1)
 
   const [artistName, setArtistName] = useState('')
@@ -39,11 +47,27 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
 
-  // Lưu trữ số lượt đăng ký theo ngày & slotId: { "14/08/2026": { 2: 3, 1: 1 } }
-  // Mặc định giả lập khung giờ 2 (09:30 - 10:30) của ngày 14 đã full 3 slot để hiển thị màu xám
   const [bookings, setBookings] = useState({
-    'Thứ sáu, 14/08/2026': { 2: 3 } 
+    'Thứ Sáu, 28/08/2026': { 2: 3 } 
   })
+
+  const checkIsDisabledDate = (year, month, day) => {
+    const dateObj = new Date(year, month, day)
+    const dayOfWeek = dateObj.getDay()
+    
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return true
+    }
+
+    const dayFormatted = String(day).padStart(2, '0')
+    const monthFormatted = String(month + 1).padStart(2, '0')
+    const dateStr = `${dayFormatted}/${monthFormatted}`
+    if (HOLIDAYS.includes(dateStr)) {
+      return true
+    }
+
+    return false
+  }
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1).getDay()
@@ -51,44 +75,94 @@ function App() {
     const days = []
     
     const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate()
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear
+
     for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({ day: prevMonthDays - i, isCurrentMonth: false })
+      const day = prevMonthDays - i
+      const isDisabled = checkIsDisabledDate(prevYear, prevMonth, day)
+      days.push({ 
+        day, 
+        month: prevMonth,
+        year: prevYear,
+        isCurrentMonth: false,
+        isDisabled
+      })
     }
+
     for (let d = 1; d <= daysInMonth; d++) {
-      days.push({ day: d, isCurrentMonth: true })
+      const isDisabled = checkIsDisabledDate(currentYear, currentMonth, d)
+      days.push({ 
+        day: d, 
+        month: currentMonth,
+        year: currentYear,
+        isCurrentMonth: true,
+        isDisabled 
+      })
     }
+
     const remaining = 35 - days.length
+    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1
+    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear
+
     for (let d = 1; d <= (remaining > 0 ? remaining : remaining + 7); d++) {
-      days.push({ day: d, isCurrentMonth: false })
+      const isDisabled = checkIsDisabledDate(nextYear, nextMonth, d)
+      days.push({ 
+        day: d, 
+        month: nextMonth,
+        year: nextYear,
+        isCurrentMonth: false,
+        isDisabled 
+      })
     }
     return days
   }, [currentMonth, currentYear])
 
+  const isSelectedDateDisabled = useMemo(() => {
+    if (!selectedDate) return true
+    return checkIsDisabledDate(selectedDate.year, selectedDate.month, selectedDate.day)
+  }, [selectedDate])
+
   const selectedDateStr = useMemo(() => {
     if (!selectedDate) return '--'
     const dayOfWeekNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
-    const dateObj = new Date(currentYear, currentMonth, selectedDate)
+    const dateObj = new Date(selectedDate.year, selectedDate.month, selectedDate.day)
     const dayName = dayOfWeekNames[dateObj.getDay()]
-    const dayFormatted = String(selectedDate).padStart(2, '0')
-    const monthFormatted = String(currentMonth + 1).padStart(2, '0')
-    return `${dayName}, ${dayFormatted}/${monthFormatted}/${currentYear}`
-  }, [selectedDate, currentMonth, currentYear])
+    const dayFormatted = String(selectedDate.day).padStart(2, '0')
+    const monthFormatted = String(selectedDate.month + 1).padStart(2, '0')
+    return `${dayName}, ${dayFormatted}/${monthFormatted}/${selectedDate.year}`
+  }, [selectedDate])
 
-  // Lấy số lượt đã đăng ký của 1 slot cụ thể trong ngày đang chọn
   const getSlotBookedCount = (slotId) => {
     if (!selectedDateStr || !bookings[selectedDateStr]) return 0
     return bookings[selectedDateStr][slotId] || 0
   }
 
+  const handleDateSelect = (item) => {
+    if (item.isDisabled) return
+    
+    if (item.month !== currentMonth) {
+      setCurrentMonth(item.month)
+      setCurrentYear(item.year)
+    }
+    
+    setSelectedDate({
+      year: item.year,
+      month: item.month,
+      day: item.day
+    })
+  }
+
   const handleSlotClick = (slot) => {
+    if (isSelectedDateDisabled) return
     const bookedCount = getSlotBookedCount(slot.id)
-    if (bookedCount >= MAX_SLOTS_PER_TIME) return // Đã đủ 3 slot thì không thể chọn
+    if (bookedCount >= MAX_SLOTS_PER_TIME) return 
     setSelectedSlot(slot.id)
   }
 
   const validate = () => {
     const newErrors = {}
-    if (!selectedDate) newErrors.date = 'Vui lòng chọn ngày'
+    if (!selectedDate || isSelectedDateDisabled) newErrors.date = 'Vui lòng chọn ngày làm việc hợp lệ'
     if (!selectedSlot) newErrors.slot = 'Vui lòng chọn khung giờ'
     if (!artistName.trim()) newErrors.artistName = 'Vui lòng nhập họ và tên nghệ sĩ'
     if (!stageName.trim()) newErrors.stageName = 'Vui lòng nhập nghệ danh'
@@ -108,11 +182,14 @@ function App() {
 
   const activeSlotObj = INITIAL_TIME_SLOTS.find(s => s.id === selectedSlot)
 
-  // HÀM XỬ LÝ GỬI DỮ LIỆU SANG GOOGLE SHEETS
   const handleSubmit = async () => {
     if (!validate()) return
 
-    // Kiểm tra lại lần cuối trước khi bấm gửi
+    if (isSelectedDateDisabled) {
+      alert('Trung tâm không làm việc vào Thứ 7, Chủ Nhật hoặc Ngày lễ. Vui lòng chọn ngày khác!')
+      return
+    }
+
     const currentBooked = getSlotBookedCount(selectedSlot)
     if (currentBooked >= MAX_SLOTS_PER_TIME) {
       alert('Khung giờ này vừa mới hết chỗ, vui lòng chọn khung giờ khác!')
@@ -139,7 +216,6 @@ function App() {
         body: JSON.stringify(payload)
       })
 
-      // Tăng số lượt đăng ký của khung giờ này lên 1
       setBookings(prev => {
         const dateBookings = prev[selectedDateStr] || {}
         const currentSlotCount = dateBookings[selectedSlot] || 0
@@ -178,7 +254,14 @@ function App() {
         </div>
 
         <div className="header-action-wrapper">
-          <a href="https://www.appa.org.vn/" className="header-back">VỀ TRANG CHỦ</a>
+          <a 
+            href="https://www.appa.org.vn/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="header-back"
+          >
+            VỀ TRANG CHỦ
+          </a>
         </div>
       </header>
 
@@ -197,7 +280,12 @@ function App() {
         </div>
 
         <div className="hero-cta-wrapper">
-          <a href="https://works.search.appa.org.vn/" className="hero-cta">
+          <a 
+            href="https://works.search.appa.org.vn/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hero-cta"
+          >
             TRA CỨU BÀI HÁT
           </a>
         </div>
@@ -255,12 +343,23 @@ function App() {
 
                   <div className="mini-cal-days">
                     {calendarDays.map((item, index) => {
-                      const isSelected = item.isCurrentMonth && item.day === selectedDate
+                      const isSelected = selectedDate && 
+                        item.day === selectedDate.day && 
+                        item.month === selectedDate.month && 
+                        item.year === selectedDate.year
+                      
+                      let dayClass = 'day-cell'
+                      if (!item.isCurrentMonth) dayClass += ' other-month'
+                      if (item.isDisabled) dayClass += ' is-disabled'
+                      if (isSelected && !item.isDisabled) dayClass += ' selected'
+
                       return (
                         <button
                           key={index}
-                          className={`day-cell ${!item.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''}`}
-                          onClick={() => item.isCurrentMonth && setSelectedDate(item.day)}
+                          className={dayClass}
+                          disabled={item.isDisabled}
+                          onClick={() => handleDateSelect(item)}
+                          title={item.isDisabled ? 'Trung tâm không làm việc vào Thứ 7, CN hoặc Ngày lễ' : ''}
                         >
                           {item.day}
                         </button>
@@ -273,31 +372,37 @@ function App() {
               <div className="slots-box">
                 <div className="cal-sub-label">Khung giờ làm việc (Tối đa 3 slot/khung giờ)</div>
                 
-                <div className="slots-grid-2col">
-                  {INITIAL_TIME_SLOTS.map((slot) => {
-                    const bookedCount = getSlotBookedCount(slot.id)
-                    const isFull = bookedCount >= MAX_SLOTS_PER_TIME
-                    const isSelected = selectedSlot === slot.id && !isFull
+                {isSelectedDateDisabled ? (
+                  <div className="disabled-day-notice">
+                    Trung tâm không làm việc vào Thứ 7, Chủ Nhật và các ngày Lễ. Vui lòng chọn ngày khác trên lịch.
+                  </div>
+                ) : (
+                  <div className="slots-grid-2col">
+                    {INITIAL_TIME_SLOTS.map((slot) => {
+                      const bookedCount = getSlotBookedCount(slot.id)
+                      const isFull = bookedCount >= MAX_SLOTS_PER_TIME
+                      const isSelected = selectedSlot === slot.id && !isFull
 
-                    let slotClass = 'slot-item'
-                    if (isFull) slotClass += ' is-booked'
-                    else if (isSelected) slotClass += ' is-selected'
+                      let slotClass = 'slot-item'
+                      if (isFull) slotClass += ' is-booked'
+                      else if (isSelected) slotClass += ' is-selected'
 
-                    return (
-                      <button
-                        key={slot.id}
-                        className={slotClass}
-                        disabled={isFull}
-                        onClick={() => handleSlotClick(slot)}
-                      >
-                        <div>{slot.time}</div>
-                        <span style={{ fontSize: '11px', opacity: 0.85, fontWeight: 'normal' }}>
-                          {isFull ? '(Đã kín)' : `(Còn ${MAX_SLOTS_PER_TIME - bookedCount}/${MAX_SLOTS_PER_TIME} slot)`}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
+                      return (
+                        <button
+                          key={slot.id}
+                          className={slotClass}
+                          disabled={isFull}
+                          onClick={() => handleSlotClick(slot)}
+                        >
+                          <div>{slot.time}</div>
+                          <span style={{ fontSize: '11px', opacity: 0.85, fontWeight: 'normal' }}>
+                            {isFull ? '(Đã kín)' : `(Còn ${MAX_SLOTS_PER_TIME - bookedCount}/${MAX_SLOTS_PER_TIME} slot)`}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
 
                 <div className="slots-legend">
                   <div className="legend-item">
@@ -311,6 +416,10 @@ function App() {
                   <div className="legend-item">
                     <span className="legend-box booked"></span>
                     <span>Đã kín (Đủ 3 slot)</span>
+                  </div>
+                  <div className="legend-item">
+                    <span className="legend-box disabled-legend-box"></span>
+                    <span>Nghỉ T7/CN/Lễ</span>
                   </div>
                 </div>
               </div>
@@ -412,11 +521,13 @@ function App() {
 
             <div className="summary-section">
               <div className="summary-label">Ngày đến làm việc</div>
-              <div className="summary-value-highlight">{selectedDateStr}</div>
+              <div className="summary-value-highlight">
+                {isSelectedDateDisabled ? 'Không làm việc (Ngày nghỉ/Lễ)' : selectedDateStr}
+              </div>
 
               <div className="summary-label" style={{ marginTop: 16 }}>Khung giờ</div>
               <div className="summary-value-highlight">
-                {activeSlotObj && getSlotBookedCount(activeSlotObj.id) < MAX_SLOTS_PER_TIME 
+                {!isSelectedDateDisabled && activeSlotObj && getSlotBookedCount(activeSlotObj.id) < MAX_SLOTS_PER_TIME 
                   ? activeSlotObj.time 
                   : 'Chưa chọn'}
               </div>
@@ -441,7 +552,8 @@ function App() {
             </div>
           </div>
 
-          <div className="contact-card">
+          {/* CẬP NHẬT ẢNH NỀN PT.PNG TẠI ĐÂY */}
+          <div className="contact-card" style={{ backgroundImage: `url(${ptBg})` }}>
             <div className="contact-title">Liên hệ</div>
             <div className="contact-list">
               <div className="contact-row">
@@ -472,10 +584,11 @@ function App() {
           <button 
             className="btn-submit-booking"
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || isSelectedDateDisabled}
           >
             {loading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ LỊCH HẸN'}
           </button>
+          
         </div>
       </main>
 
@@ -485,7 +598,7 @@ function App() {
           <div className="footer-top">
             <div className="footer-brand-center">
               <div className="footer-logo-title-row">
-                <img src={logoAppa} alt="APPA CMC Logo" className="footer-logo" />
+                <img src={logoAppaF} alt="APPA CMC Logo" className="footer-logo" />
                 <div className="footer-titles">
                   <h2 className="footer-title-main">
                     TRUNG TÂM KHAI THÁC QUYỀN BIỂU DIỄN ÂM NHẠC VIỆT NAM (APPA - CMC)
