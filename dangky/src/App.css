@@ -165,10 +165,11 @@ input {
   color: #0d1b2a;
 }
 
+/* Cập nhật tỉ lệ Grid cho lịch to hơn (320px) và khung giờ làm việc linh hoạt */
 .booking-picker-grid {
   display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 32px;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
 }
 
 .cal-sub-label {
@@ -178,12 +179,12 @@ input {
   margin-bottom: 12px;
 }
 
-/* MINI CALENDAR */
+/* MINI CALENDAR (Lịch hiển thị rộng hơn, các ô ngày to hơn một chút) */
 .mini-calendar {
   background: #ffffff;
   border: 1px solid #f1f5f9;
   border-radius: 16px;
-  padding: 12px;
+  padding: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
@@ -195,13 +196,13 @@ input {
 
 .select-group select {
   border: none;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: #0f172a;
   background: transparent;
   cursor: pointer;
   outline: none;
-  margin-right: 4px;
+  margin-right: 6px;
 }
 
 .mini-cal-weekdays {
@@ -212,7 +213,7 @@ input {
 }
 
 .weekday-cell {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #94a3b8;
 }
@@ -227,7 +228,7 @@ input {
   aspect-ratio: 1;
   border: none;
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: #1e293b;
   border-radius: 50%;
@@ -272,18 +273,18 @@ input {
   margin-bottom: 24px;
 }
 
-/* SLOTS GRID */
+/* SLOTS GRID (Nút chọn giờ thu gọn nhỏ lại chút về padding & chữ) */
 .slots-grid-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 40px;
+  margin-bottom: 16px;
 }
 
 .slot-item {
-  padding: 12px 16px;
+  padding: 8px 10px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   text-align: center;
   background: #ffffff;
@@ -309,22 +310,22 @@ input {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 12px 16px;
+  margin-top: 12px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: #0f172a;
 }
 
 .legend-box {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 4px;
 }
 
@@ -462,10 +463,9 @@ input {
   margin-top: 2px;
 }
 
-/* CONTACT CARD (Sửa nền + hỗ trợ ảnh PT.png) */
 /* CONTACT CARD */
 .contact-card {
-  background-color: #dbeafe; /* Màu nền xanh đậm hơn rõ rệt (Slate/Blue-100) */
+  background-color: #dbeafe;
   border-radius: 20px;
   padding: 24px;
   position: relative;
@@ -473,7 +473,6 @@ input {
   min-height: 180px;
 }
 
-/* Tạo lớp ảnh nền mờ phía dưới */
 .contact-card::after {
   content: "";
   position: absolute;
@@ -481,18 +480,18 @@ input {
   bottom: 0;
   width: 100%;
   height: 100%;
-  background-image: inherit; /* Tự động lấy ảnh PT.png từ style inline của JSX */
+  background-image: inherit;
   background-repeat: no-repeat;
   background-position: right bottom;
   background-size: contain;
-  opacity: 0.35; /* Độ mờ của hình nền (chỉnh từ 0.1 đến 1 tùy mức độ mờ bạn muốn) */
+  opacity: 0.35;
   pointer-events: none;
   z-index: 0;
 }
 
 .contact-title {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--primary-blue);
   margin-bottom: 20px;
   position: relative;
@@ -504,7 +503,7 @@ input {
   flex-direction: column;
   gap: 16px;
   position: relative;
-  z-index: 1; /* Đảm bảo chữ & icon hiển thị sắc nét đè lên hình mờ */
+  z-index: 1;
 }
 
 .contact-row {

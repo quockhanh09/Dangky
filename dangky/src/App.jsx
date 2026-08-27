@@ -168,8 +168,8 @@ function App() {
     if (!stageName.trim()) newErrors.stageName = 'Vui lòng nhập nghệ danh'
     if (!phone.trim()) {
       newErrors.phone = 'Vui lòng nhập số điện thoại'
-    } else if (!/^[0-9]{10}$/.test(phone.trim())) {
-      newErrors.phone = 'Số điện thoại phải có 10 chữ số'
+    } else if (!/^(0[3|5|7|8|9])+([0-9]{8})$/.test(phone.trim())) {
+      newErrors.phone = 'Số điện thoại không hợp lệ (10 chữ số)'
     }
     if (!email.trim()) {
       newErrors.email = 'Vui lòng nhập email'
@@ -208,6 +208,7 @@ function App() {
     }
 
     try {
+      // Gửi request dạng text/plain để tránh vướng CORS pre-flight của trình duyệt đối với Google Apps Script
       await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         headers: {
@@ -216,6 +217,7 @@ function App() {
         body: JSON.stringify(payload)
       })
 
+      // Cập nhật State giao diện ngay lập tức
       setBookings(prev => {
         const dateBookings = prev[selectedDateStr] || {}
         const currentSlotCount = dateBookings[selectedSlot] || 0
@@ -479,7 +481,7 @@ function App() {
 
             <div className="form-grid-2col">
               <div className="form-field">
-                <label><span className="star">*</span> Số điện thoại</label>
+                <label><span className="star">*</span> Số điện thoại (Nhận thông báo Zalo)</label>
                 <input
                   type="text"
                   placeholder="Nhập số điện thoại"
@@ -547,12 +549,11 @@ function App() {
               </div>
               <div className="note-item">
                 <span className="check-icon">✓</span>
-                <span>Trung tâm sẽ liên hệ xác nhận qua điện thoại hoặc email</span>
+                <span>Thông tin xác nhận lịch hẹn sẽ gửi tự động qua Zalo</span>
               </div>
             </div>
           </div>
 
-          {/* CẬP NHẬT ẢNH NỀN PT.PNG TẠI ĐÂY */}
           <div className="contact-card" style={{ backgroundImage: `url(${ptBg})` }}>
             <div className="contact-title">Liên hệ</div>
             <div className="contact-list">
@@ -695,7 +696,7 @@ function App() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">&#10003;</div>
             <h3>Đăng ký thành công!</h3>
-            <p>Lịch hẹn của bạn đã được ghi nhận thành công.</p>
+            <p>Thông tin lịch hẹn đã được gửi tới Zalo của số điện thoại <b>{phone}</b>.</p>
             <button className="modal-close" onClick={() => setShowModal(false)}>Đóng</button>
           </div>
         </div>
