@@ -208,7 +208,6 @@ function App() {
     }
 
     try {
-      // Gửi request dạng text/plain để tránh vướng CORS pre-flight của trình duyệt đối với Google Apps Script
       await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         headers: {
@@ -217,7 +216,6 @@ function App() {
         body: JSON.stringify(payload)
       })
 
-      // Cập nhật State giao diện ngay lập tức
       setBookings(prev => {
         const dateBookings = prev[selectedDateStr] || {}
         const currentSlotCount = dateBookings[selectedSlot] || 0
