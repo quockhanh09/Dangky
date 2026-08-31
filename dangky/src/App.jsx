@@ -5,6 +5,7 @@ import logoAppa from './assets/Appa-cmc-nen-toi - Copy.png'
 import logoAppaF from './assets/Appa-cmc-chu-trang-(trong-suot).png'
 import heroBg from './assets/Frame-1629.png'
 import ptBg from './assets/PT.png'
+import zaloIcon from './assets/icons8-zalo-50.png'
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzD7AVwQoWvYkUyzHGVM9XFqvwAm8cX5C_kkn_MExe7u_S0EE-H7xsYJvw6JLrBB5ks/exec'
 
@@ -568,6 +569,23 @@ function App() {
                   <polyline points="22,6 12,13 2,6"></polyline>
                 </svg>
                 <span className="contact-text font-bold">info@appa.org.vn</span>
+              </div>
+
+              <div className="contact-row">
+                <img 
+                  src={zaloIcon} 
+                  alt="Zalo Icon" 
+                  style={{ width: 20, height: 20, objectFit: 'contain' }} 
+                />
+                <a 
+                  href="https://zalo.me/1529737094895409932" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="contact-text font-bold"
+                  style={{ color: '#0f52ba', textDecoration: 'none' }}
+                >
+                  Zalo APPA CMC
+                </a>
               </div>
 
               <div className="contact-row">
