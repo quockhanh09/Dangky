@@ -9,6 +9,7 @@ import zaloIcon from './assets/icons8-zalo-50.png'
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzD7AVwQoWvYkUyzHGVM9XFqvwAm8cX5C_kkn_MExe7u_S0EE-H7xsYJvw6JLrBB5ks/exec'
 
+const BOOKINGS_ENABLED = false
 const MAX_SLOTS_PER_TIME = 3 
 const HOLIDAYS = [
   '01/01', 
@@ -140,7 +141,7 @@ function App() {
   }
 
   const handleDateSelect = (item) => {
-    if (item.isDisabled) return
+    if (!BOOKINGS_ENABLED || item.isDisabled) return
     
     if (item.month !== currentMonth) {
       setCurrentMonth(item.month)
@@ -155,7 +156,7 @@ function App() {
   }
 
   const handleSlotClick = (slot) => {
-    if (isSelectedDateDisabled) return
+    if (!BOOKINGS_ENABLED || isSelectedDateDisabled) return
     const bookedCount = getSlotBookedCount(slot.id)
     if (bookedCount >= MAX_SLOTS_PER_TIME) return 
     setSelectedSlot(slot.id)
@@ -184,6 +185,7 @@ function App() {
   const activeSlotObj = INITIAL_TIME_SLOTS.find(s => s.id === selectedSlot)
 
   const handleSubmit = async () => {
+    if (!BOOKINGS_ENABLED) return
     if (!validate()) return
 
     if (isSelectedDateDisabled) {
@@ -310,6 +312,12 @@ function App() {
               <h2>1. Chọn lịch hẹn</h2>
             </div>
 
+            {/* {!BOOKINGS_ENABLED && (
+              <div className="booking-closed-notice" role="status">
+                Hiện trung tâm tạm ngừng nhận đăng ký lịch làm việc. Vui lòng quay lại sau.
+              </div>
+            )} */}
+
             <div className="booking-picker-grid">
               <div className="calendar-box">
                 <div className="cal-sub-label">Ngày đến làm việc</div>
@@ -319,6 +327,7 @@ function App() {
                     <div className="select-group">
                       <select 
                         value={currentMonth} 
+                        disabled={!BOOKINGS_ENABLED}
                         onChange={(e) => setCurrentMonth(Number(e.target.value))}
                       >
                         {MONTHS.map((m, idx) => (
@@ -327,6 +336,7 @@ function App() {
                       </select>
                       <select 
                         value={currentYear} 
+                        disabled={!BOOKINGS_ENABLED}
                         onChange={(e) => setCurrentYear(Number(e.target.value))}
                       >
                         <option value={2025}>2025</option>
@@ -352,15 +362,20 @@ function App() {
                       let dayClass = 'day-cell'
                       if (!item.isCurrentMonth) dayClass += ' other-month'
                       if (item.isDisabled) dayClass += ' is-disabled'
-                      if (isSelected && !item.isDisabled) dayClass += ' selected'
+                      if (!BOOKINGS_ENABLED) dayClass += ' is-booking-closed'
+                      if (isSelected && !item.isDisabled && BOOKINGS_ENABLED) dayClass += ' selected'
 
                       return (
                         <button
                           key={index}
                           className={dayClass}
-                          disabled={item.isDisabled}
+                          disabled={!BOOKINGS_ENABLED || item.isDisabled}
                           onClick={() => handleDateSelect(item)}
-                          title={item.isDisabled ? 'Trung tâm không làm việc vào Thứ 7, CN hoặc Ngày lễ' : ''}
+                          title={!BOOKINGS_ENABLED
+                            ? 'Trung tâm đang tạm ngừng nhận đăng ký'
+                            : item.isDisabled
+                              ? 'Trung tâm không làm việc vào Thứ 7, CN hoặc Ngày lễ'
+                              : ''}
                         >
                           {item.day}
                         </button>
@@ -387,12 +402,13 @@ function App() {
                       let slotClass = 'slot-item'
                       if (isFull) slotClass += ' is-booked'
                       else if (isSelected) slotClass += ' is-selected'
+                      if (!BOOKINGS_ENABLED) slotClass += ' is-booking-closed'
 
                       return (
                         <button
                           key={slot.id}
                           className={slotClass}
-                          disabled={isFull}
+                          disabled={!BOOKINGS_ENABLED || isFull}
                           onClick={() => handleSlotClick(slot)}
                         >
                           <div>{slot.time}</div>
@@ -601,9 +617,9 @@ function App() {
           <button 
             className="btn-submit-booking"
             onClick={handleSubmit}
-            disabled={loading || isSelectedDateDisabled}
+            disabled={!BOOKINGS_ENABLED || loading || isSelectedDateDisabled}
           >
-            {loading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ LỊCH HẸN'}
+            {loading ? 'ĐANG XỬ LÝ...' : BOOKINGS_ENABLED ? 'ĐĂNG KÝ LỊCH HẸN' : 'TẠM NGỪNG NHẬN ĐĂNG KÝ'}
           </button>
           
         </div>
