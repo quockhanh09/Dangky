@@ -27,12 +27,13 @@ const MONTHS = [
 const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 
 const INITIAL_TIME_SLOTS = [
-  { id: 1, time: '08:30 - 09:30' },
-  { id: 2, time: '09:30 - 10:30' },
-  { id: 3, time: '10:30 - 11:30' },
-  { id: 4, time: '13:30 - 14:30' },
-  { id: 5, time: '14:30 - 15:30' },
-  { id: 6, time: '15:30 - 16:30' },
+  { id: 1, time: '09:00 - 10:00' },
+  { id: 2, time: '10:00 - 11:00' },
+  { id: 3, time: '11:00 - 12:00' },
+  { id: 4, time: '13:00 - 14:00' },
+  { id: 5, time: '14:00 - 15:00' },
+  { id: 6, time: '15:00 - 16:00' },
+  { id: 7, time: '16:00 - 17:00' },
 ]
 
 function App() {
@@ -43,6 +44,8 @@ function App() {
 
   const [artistName, setArtistName] = useState('')
   const [stageName, setStageName] = useState('')
+  const [snsAccount, setSnsAccount] = useState('')
+  const [musicChannel, setMusicChannel] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [errors, setErrors] = useState({})
@@ -168,6 +171,8 @@ function App() {
     if (!selectedSlot) newErrors.slot = 'Vui lòng chọn khung giờ'
     if (!artistName.trim()) newErrors.artistName = 'Vui lòng nhập họ và tên nghệ sĩ'
     if (!stageName.trim()) newErrors.stageName = 'Vui lòng nhập nghệ danh'
+    if (!snsAccount.trim()) newErrors.snsAccount = 'Vui lòng nhập tài khoản SNS'
+    if (!musicChannel.trim()) newErrors.musicChannel = 'Vui lòng nhập kênh phát hành sản phẩm âm nhạc'
     if (!phone.trim()) {
       newErrors.phone = 'Vui lòng nhập số điện thoại'
     } else if (!/^(0[3|5|7|8|9])+([0-9]{8})$/.test(phone.trim())) {
@@ -206,6 +211,8 @@ function App() {
       timeSlot: activeSlotObj ? activeSlotObj.time : '',
       artistName: artistName,
       stageName: stageName,
+      snsAccount: snsAccount,
+      musicChannel: musicChannel,
       phone: phone,
       email: email
     }
@@ -311,12 +318,6 @@ function App() {
               </span>
               <h2>1. Chọn lịch hẹn</h2>
             </div>
-
-            {/* {!BOOKINGS_ENABLED && (
-              <div className="booking-closed-notice" role="status">
-                Hiện trung tâm tạm ngừng nhận đăng ký lịch làm việc. Vui lòng quay lại sau.
-              </div>
-            )} */}
 
             <div className="booking-picker-grid">
               <div className="calendar-box">
@@ -479,6 +480,30 @@ function App() {
                 />
                 {errors.stageName && <span className="error-text">{errors.stageName}</span>}
               </div>
+
+              <div className="form-field">
+                <label><span className="star">*</span> Tài khoản SNS (Facebook, Instagram,...)</label>
+                <input
+                  type="text"
+                  placeholder="Nhập link tài khoản SNS của nghệ sĩ"
+                  value={snsAccount}
+                  onChange={(e) => setSnsAccount(e.target.value)}
+                  className={errors.snsAccount ? 'input-error' : ''}
+                />
+                {errors.snsAccount && <span className="error-text">{errors.snsAccount}</span>}
+              </div>
+
+              <div className="form-field">
+                <label><span className="star">*</span> Kênh phát hành sản phẩm âm nhạc (YT, Zing, ...)</label>
+                <input
+                  type="text"
+                  placeholder="Nhập link kênh phát hành sản phẩm âm nhạc"
+                  value={musicChannel}
+                  onChange={(e) => setMusicChannel(e.target.value)}
+                  className={errors.musicChannel ? 'input-error' : ''}
+                />
+                {errors.musicChannel && <span className="error-text">{errors.musicChannel}</span>}
+              </div>
             </div>
           </div>
 
@@ -584,7 +609,7 @@ function App() {
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                   <polyline points="22,6 12,13 2,6"></polyline>
                 </svg>
-                <span className="contact-text font-bold">info@appa.org.vn</span>
+                <span className="contact-text font-bold">cmc@appa.org.vn</span>
               </div>
 
               <div className="contact-row">
@@ -680,7 +705,7 @@ function App() {
                 <p className="address-line">Hà Nội: Tòa W1, Vinhomes Westpoint, Đỗ Đức Dục, Phường Từ Liêm, Hà Nội</p>
                 <p className="address-line">TP. HCM: 22A Cộng Hoà, Phường Tân Sơn Nhất, Tp. Hồ Chí Minh</p>
                 <p className="address-line"><span className="address-bold">TEL:</span> (+84) 989 115 323</p>
-                <p className="address-line"><span className="address-bold">E-MAIL:</span> info@appa.org.vn</p>
+                <p className="address-line"><span className="address-bold">E-MAIL:</span> cmc@appa.org.vn</p>
               </div>
 
               <div className="footer-copyright">
